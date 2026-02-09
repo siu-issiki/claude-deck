@@ -12,6 +12,7 @@ export function MainLayout() {
 
   const sidebarWidth = useWorkspaceStore((s) => s.sidebarWidth);
   const setSidebarWidth = useWorkspaceStore((s) => s.setSidebarWidth);
+  const saveSidebarWidth = useWorkspaceStore((s) => s.saveSidebarWidth);
   const dragging = useRef(false);
 
   const onMouseDown = useCallback(
@@ -33,12 +34,13 @@ export function MainLayout() {
         document.body.style.cursor = "";
         document.removeEventListener("mousemove", onMouseMove);
         document.removeEventListener("mouseup", onMouseUp);
+        saveSidebarWidth();
       };
 
       document.addEventListener("mousemove", onMouseMove);
       document.addEventListener("mouseup", onMouseUp);
     },
-    [setSidebarWidth]
+    [setSidebarWidth, saveSidebarWidth]
   );
 
   return (

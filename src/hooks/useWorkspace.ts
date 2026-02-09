@@ -8,6 +8,7 @@ export function useWorkspace() {
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
+    const aborted = { current: false };
 
     const restore = async () => {
       const { setIsRestoring } = useWorkspaceStore.getState();
@@ -15,10 +16,29 @@ export function useWorkspace() {
 
       try {
         const workspace = await useWorkspaceStore.getState().loadWorkspace();
-        const { restoreTab, setActiveTab } = useTerminalStore.getState();
+        const { restoreTab, setActiveTab, closeTab } =
+          useTerminalStore.getState();
+        const restoredTabIds: string[] = [];
 
         for (const persisted of workspace.tabs) {
+          if (aborted.current) {
+            for (const id of restoredTabIds) {
+              closeTab(id);
+            }
+            return;
+          }
           await restoreTab(persisted);
+          const currentTabs = useTerminalStore.getState().tabs;
+          if (currentTabs.length > restoredTabIds.length) {
+            restoredTabIds.push(currentTabs[currentTabs.length - 1].id);
+          }
+        }
+
+        if (aborted.current) {
+          for (const id of restoredTabIds) {
+            closeTab(id);
+          }
+          return;
         }
 
         const currentTabs = useTerminalStore.getState().tabs;
@@ -32,20 +52,30 @@ export function useWorkspace() {
       } catch (e) {
         console.error("Failed to restore workspace:", e);
       } finally {
-        setIsRestoring(false);
+        if (!aborted.current) {
+          setIsRestoring(false);
+        }
       }
     };
 
     restore();
+    return () => {
+      aborted.current = true;
+    };
   }, []);
 
   useEffect(() => {
     const unsub = useTerminalStore.subscribe((state) => {
-      const { isRestoring } = useWorkspaceStore.getState();
-      if (isRestoring) return;
+      if (useWorkspaceStore.getState().isRestoring) return;
 
-      const { getPersistedTabs } = useTerminalStore.getState();
-      const persistedTabs = getPersistedTabs();
+      const persistedTabs = state.tabs.map(
+        ({ projectId, sessionId, title, cwd }) => ({
+          projectId,
+          sessionId,
+          title,
+          cwd,
+        })
+      );
       const activeIdx = state.tabs.findIndex(
         (t) => t.id === state.activeTabId
       );

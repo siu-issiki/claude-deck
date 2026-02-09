@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import { toast } from "sonner";
 import type { TerminalTab, PersistedTab } from "@/types/terminal";
 
 interface TerminalState {
@@ -16,7 +17,6 @@ interface TerminalState {
   restoreTab: (persisted: PersistedTab) => Promise<void>;
   closeTab: (id: string) => Promise<void>;
   setActiveTab: (id: string) => void;
-  getPersistedTabs: () => PersistedTab[];
 }
 
 export const useTerminalStore = create<TerminalState>()((set, get) => ({
@@ -107,6 +107,7 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
       }));
     } catch (e) {
       console.error("Failed to restore tab:", e);
+      toast.error("タブの復元に失敗しました");
     }
   },
 
@@ -130,13 +131,4 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
     set({ activeTabId: id });
   },
 
-  getPersistedTabs: () => {
-    const { tabs } = get();
-    return tabs.map(({ projectId, sessionId, title, cwd }) => ({
-      projectId,
-      sessionId,
-      title,
-      cwd,
-    }));
-  },
 }));
