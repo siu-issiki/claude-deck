@@ -55,6 +55,7 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
         tabs: [...state.tabs, tab],
         activeTabId: ptyId,
       }));
+      await useSessionStore.getState().updateSession(session.id, {});
     } catch (e) {
       console.error("Failed to spawn PTY:", e);
       toast.error("ターミナルの起動に失敗しました");
@@ -63,15 +64,16 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
 
   openNewSession: async (projectId, cwd, title) => {
     try {
-      const session = await useSessionStore
-        .getState()
-        .createSession(projectId, cwd, title);
-
       const ptyId = await invoke<string>("spawn_pty", {
         cwd,
         cols: 80,
         rows: 24,
       });
+
+      const session = await useSessionStore
+        .getState()
+        .createSession(projectId, cwd, title);
+
       const tab: TerminalTab = {
         id: ptyId,
         sessionId: session.id,
