@@ -36,7 +36,7 @@ export function Sidebar({ width }: SidebarProps) {
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 overflow-hidden [&_[data-slot=scroll-area-viewport]>div]:!block [&_[data-slot=scroll-area-viewport]>div]:!min-w-0">
         <ProjectList />
       </ScrollArea>
     </aside>

@@ -49,11 +49,11 @@ export function SessionItem({ session }: SessionItemProps) {
         isSelected && "bg-sidebar-accent text-sidebar-accent-foreground"
       )}
     >
-      <div className="flex items-center gap-1.5">
+      <div className="flex min-w-0 items-center gap-1.5">
         <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" />
         <span className="truncate text-xs">{preview}</span>
       </div>
-      <div className="flex items-center gap-2 pl-[18px]">
+      <div className="flex min-w-0 items-center gap-2 pl-[18px]">
         {session.gitBranch && (
           <span className="truncate text-[10px] text-muted-foreground">
             {session.gitBranch}

@@ -19,12 +19,12 @@ export function ProjectItem({ project }: ProjectItemProps) {
   const sessions = sessionsByProject[project.id];
 
   return (
-    <div>
+    <div className="overflow-hidden">
       <div className="group flex items-center">
         <button
           onClick={() => toggleProject(project.id)}
           className={cn(
-            "flex flex-1 items-center gap-1.5 px-3 py-1.5 text-left text-xs",
+            "flex min-w-0 flex-1 items-center gap-1.5 px-3 py-1.5 text-left text-xs",
             "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             "transition-colors"
           )}
