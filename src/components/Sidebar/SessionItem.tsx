@@ -1,6 +1,10 @@
-import { MessageSquare } from "lucide-react";
+import { Loader2, MessageSquare, X } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
-import { useTerminalStore } from "@/stores/terminalStore";
+import {
+  useTerminalStore,
+  useIsSessionGenerating,
+  useSessionTabId,
+} from "@/stores/terminalStore";
 import { cn } from "@/lib/utils";
 import type { SessionInfo } from "@/types/project";
 
@@ -26,6 +30,9 @@ function formatRelativeTime(unixMs: number | null): string {
 export function SessionItem({ session }: SessionItemProps) {
   const { selectedSessionId, selectSession } = useProjectStore();
   const openSession = useTerminalStore((s) => s.openSession);
+  const closeTab = useTerminalStore((s) => s.closeTab);
+  const isGenerating = useIsSessionGenerating(session.id);
+  const tabId = useSessionTabId(session.id);
   const isSelected = selectedSessionId === session.id;
   const preview = session.firstMessage || "No message";
 
@@ -40,29 +47,46 @@ export function SessionItem({ session }: SessionItemProps) {
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className={cn(
-        "flex w-full flex-col gap-0.5 px-3 py-1.5 text-left",
-        "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        "transition-colors",
-        isSelected && "bg-sidebar-accent text-sidebar-accent-foreground"
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-1.5">
-        <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" />
-        <span className="truncate text-xs">{preview}</span>
-      </div>
-      <div className="flex min-w-0 items-center gap-2 pl-[18px]">
-        {session.gitBranch && (
-          <span className="truncate text-[10px] text-muted-foreground">
-            {session.gitBranch}
-          </span>
+    <div className="group/session flex items-center">
+      <button
+        onClick={handleClick}
+        className={cn(
+          "flex min-w-0 flex-1 flex-col gap-0.5 px-3 py-1.5 text-left",
+          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+          "transition-colors",
+          isSelected && "bg-sidebar-accent text-sidebar-accent-foreground"
         )}
-        <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-          {formatRelativeTime(session.updatedAt)}
-        </span>
-      </div>
-    </button>
+      >
+        <div className="flex min-w-0 items-center gap-1.5">
+          {isGenerating ? (
+            <Loader2 className="h-3 w-3 shrink-0 animate-spin text-sky-500" />
+          ) : (
+            <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" />
+          )}
+          <span className="truncate text-xs">{preview}</span>
+        </div>
+        <div className="flex min-w-0 items-center gap-2 pl-[18px]">
+          {session.gitBranch && (
+            <span className="truncate text-[10px] text-muted-foreground">
+              {session.gitBranch}
+            </span>
+          )}
+          <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
+            {formatRelativeTime(session.updatedAt)}
+          </span>
+        </div>
+      </button>
+      {tabId !== null && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            closeTab(tabId);
+          }}
+          className="mr-2 rounded-sm p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover/session:opacity-100"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      )}
+    </div>
   );
 }

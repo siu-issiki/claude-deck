@@ -3,6 +3,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { useTerminalStore } from "@/stores/terminalStore";
 import "@xterm/xterm/css/xterm.css";
 
 /**
@@ -98,10 +99,12 @@ export function useTerminal(tabId: string, isVisible: boolean) {
         bytes[i] = decoded.charCodeAt(i);
       }
       terminal.write(bytes);
+      useTerminalStore.getState().markTabGenerating(tabId);
     });
 
     const unlistenExit = listen(`pty:${tabId}:exit`, () => {
       terminal.write("\r\n\x1b[90m[Process exited]\x1b[0m\r\n");
+      useTerminalStore.getState().clearTabGenerating(tabId);
     });
 
     let pending = "";
@@ -165,6 +168,7 @@ export function useTerminal(tabId: string, isVisible: boolean) {
       resizeObserver.disconnect();
       unlistenData.then((fn) => fn());
       unlistenExit.then((fn) => fn());
+      useTerminalStore.getState().clearTabGenerating(tabId);
       terminal.dispose();
       terminalRef.current = null;
       fitAddonRef.current = null;

@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { ChevronRight, Folder, Plus } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
+import { useTerminalStore } from "@/stores/terminalStore";
 import { SessionItem } from "./SessionItem";
-import { NewSessionDialog } from "@/components/Terminal/NewSessionDialog";
 import { cn } from "@/lib/utils";
 import type { ProjectInfo } from "@/types/project";
 
@@ -13,7 +12,7 @@ interface ProjectItemProps {
 export function ProjectItem({ project }: ProjectItemProps) {
   const { expandedProjectIds, sessionsByProject, toggleProject } =
     useProjectStore();
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const openNewSession = useTerminalStore((s) => s.openNewSession);
 
   const isExpanded = expandedProjectIds.has(project.id);
   const sessions = sessionsByProject[project.id];
@@ -44,7 +43,7 @@ export function ProjectItem({ project }: ProjectItemProps) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            setDialogOpen(true);
+            openNewSession(project.path);
           }}
           className="mr-2 rounded-sm p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover:opacity-100"
         >
@@ -69,12 +68,6 @@ export function ProjectItem({ project }: ProjectItemProps) {
           )}
         </div>
       )}
-
-      <NewSessionDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        defaultCwd={project.path}
-      />
     </div>
   );
 }
