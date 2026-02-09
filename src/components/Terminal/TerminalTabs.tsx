@@ -1,16 +1,25 @@
-import { X } from "lucide-react";
+import { useState } from "react";
+import { Plus, X } from "lucide-react";
 import { useTerminalStore } from "@/stores/terminalStore";
 import { TerminalPane } from "./TerminalPane";
+import { NewSessionDialog } from "./NewSessionDialog";
 import { cn } from "@/lib/utils";
 
 export function TerminalTabs() {
   const { tabs, activeTabId, setActiveTab, closeTab } = useTerminalStore();
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   if (tabs.length === 0) {
     return (
       <div className="flex h-full flex-col">
         <div className="flex h-9 items-center border-b border-border px-2">
           <span className="text-xs text-muted-foreground">Terminal</span>
+          <button
+            onClick={() => setDialogOpen(true)}
+            className="ml-auto rounded-sm p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="text-center text-muted-foreground">
@@ -20,6 +29,7 @@ export function TerminalTabs() {
             </p>
           </div>
         </div>
+        <NewSessionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       </div>
     );
   }
@@ -52,6 +62,12 @@ export function TerminalTabs() {
             </span>
           </button>
         ))}
+        <button
+          onClick={() => setDialogOpen(true)}
+          className="ml-1 rounded-sm p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" />
+        </button>
       </div>
       <div className="relative flex-1">
         {tabs.map((tab) => (
@@ -64,6 +80,7 @@ export function TerminalTabs() {
           </div>
         ))}
       </div>
+      <NewSessionDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>
   );
 }

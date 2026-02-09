@@ -29,7 +29,7 @@ impl PtyState {
 pub fn spawn(
     state: &PtyState,
     app_handle: tauri::AppHandle,
-    session_id: &str,
+    session_id: Option<&str>,
     cwd: Option<&str>,
     cols: u16,
     rows: u16,
@@ -49,8 +49,10 @@ pub fn spawn(
         .map_err(|e| format!("Failed to open PTY: {e}"))?;
 
     let mut cmd = CommandBuilder::new("claude");
-    cmd.arg("--resume");
-    cmd.arg(session_id);
+    if let Some(sid) = session_id {
+        cmd.arg("--resume");
+        cmd.arg(sid);
+    }
     cmd.env("TERM", "xterm-256color");
 
     match cwd {

@@ -12,6 +12,7 @@ interface TerminalState {
     cwd: string | undefined,
     title: string
   ) => Promise<void>;
+  openNewSession: (cwd: string, title?: string) => Promise<void>;
   closeTab: (id: string) => Promise<void>;
   setActiveTab: (id: string) => void;
 }
@@ -36,6 +37,30 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
         rows: 24,
       });
       const tab: TerminalTab = { id: ptyId, projectId, sessionId, title };
+      set((state) => ({
+        tabs: [...state.tabs, tab],
+        activeTabId: ptyId,
+      }));
+    } catch (e) {
+      console.error("Failed to spawn PTY:", e);
+    }
+  },
+
+  openNewSession: async (cwd, title) => {
+    const label = title ?? cwd.split("/").filter(Boolean).pop() ?? "New Session";
+    try {
+      const ptyId = await invoke<string>("spawn_pty", {
+        cwd,
+        sessionId: null,
+        cols: 80,
+        rows: 24,
+      });
+      const tab: TerminalTab = {
+        id: ptyId,
+        projectId: null,
+        sessionId: null,
+        title: label,
+      };
       set((state) => ({
         tabs: [...state.tabs, tab],
         activeTabId: ptyId,
