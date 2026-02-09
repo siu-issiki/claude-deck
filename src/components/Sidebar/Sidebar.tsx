@@ -1,17 +1,32 @@
+import { Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { ProjectList } from "./ProjectList";
+import { useProjectStore } from "@/stores/projectStore";
 
 export function Sidebar() {
+  const { searchQuery, setSearchQuery } = useProjectStore();
+
   return (
     <aside className="flex h-full w-64 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
       <div className="flex h-12 items-center border-b border-border px-4">
         <h1 className="text-sm font-semibold">nexus</h1>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="p-4">
-          <p className="text-xs text-muted-foreground">
-            Projects will appear here
-          </p>
+
+      <div className="border-b border-border px-3 py-2">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search projects..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7 pl-7 text-xs"
+          />
         </div>
+      </div>
+
+      <ScrollArea className="flex-1">
+        <ProjectList />
       </ScrollArea>
     </aside>
   );
