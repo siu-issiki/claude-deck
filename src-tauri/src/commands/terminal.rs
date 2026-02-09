@@ -5,13 +5,13 @@ use std::io::Write;
 #[tauri::command]
 pub fn spawn_pty(
     cwd: Option<String>,
-    session_id: String,
+    session_id: Option<String>,
     cols: u16,
     rows: u16,
     app_handle: tauri::AppHandle,
     state: tauri::State<'_, PtyState>,
 ) -> Result<String, String> {
-    pty::spawn(&state, app_handle, &session_id, cwd.as_deref(), cols, rows)
+    pty::spawn(&state, app_handle, session_id.as_deref(), cwd.as_deref(), cols, rows)
 }
 
 #[tauri::command]
