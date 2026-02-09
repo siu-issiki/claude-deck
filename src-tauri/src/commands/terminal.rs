@@ -1,6 +1,5 @@
 use crate::pty::{self, PtyState};
 use portable_pty::PtySize;
-use std::io::Write;
 
 #[tauri::command]
 pub fn spawn_pty(
@@ -15,19 +14,15 @@ pub fn spawn_pty(
 }
 
 #[tauri::command]
-pub fn write_pty(id: String, data: Vec<u8>, state: tauri::State<'_, PtyState>) -> Result<(), String> {
-    let mut instances = state.instances.lock().unwrap();
+pub fn write_pty(id: String, data: String, state: tauri::State<'_, PtyState>) -> Result<(), String> {
+    let instances = state.instances.lock().unwrap();
     let instance = instances
-        .get_mut(&id)
+        .get(&id)
         .ok_or_else(|| format!("PTY not found: {id}"))?;
     instance
-        .writer
-        .write_all(&data)
+        .write_tx
+        .send(data.into_bytes())
         .map_err(|e| format!("Write failed: {e}"))?;
-    instance
-        .writer
-        .flush()
-        .map_err(|e| format!("Flush failed: {e}"))?;
     Ok(())
 }
 

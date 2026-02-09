@@ -3,15 +3,17 @@ use base64::Engine;
 use portable_pty::{native_pty_system, Child, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
+use std::sync::mpsc;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
 use tauri::Emitter;
 
 pub struct PtyInstance {
     pub master: Box<dyn MasterPty + Send>,
-    pub writer: Box<dyn Write + Send>,
+    pub write_tx: mpsc::Sender<Vec<u8>>,
     child: Box<dyn Child + Send + Sync>,
     reader_thread: Option<JoinHandle<()>>,
+    writer_thread: Option<JoinHandle<()>>,
 }
 
 pub struct PtyState {
@@ -92,16 +94,33 @@ pub fn spawn(
         let _ = app_handle.emit(&format!("pty:{event_id}:exit"), ());
     });
 
-    let writer = pair
+    let mut writer = pair
         .master
         .take_writer()
         .map_err(|e| format!("Failed to take writer: {e}"))?;
 
+    let (write_tx, write_rx) = mpsc::channel::<Vec<u8>>();
+    let writer_thread = std::thread::spawn(move || {
+        while let Ok(data) = write_rx.recv() {
+            if writer.write_all(&data).is_err() {
+                break;
+            }
+            // Drain any additional buffered data before flushing
+            while let Ok(more) = write_rx.try_recv() {
+                if writer.write_all(&more).is_err() {
+                    return;
+                }
+            }
+            let _ = writer.flush();
+        }
+    });
+
     let instance = PtyInstance {
         master: pair.master,
-        writer,
+        write_tx,
         child,
         reader_thread: Some(reader_thread),
+        writer_thread: Some(writer_thread),
     };
 
     state
@@ -122,9 +141,12 @@ pub fn kill(state: &PtyState, id: &str) -> Result<(), String> {
         .ok_or_else(|| format!("PTY not found: {id}"))?;
 
     let _ = instance.child.kill();
-    drop(instance.writer);
+    drop(instance.write_tx);
     drop(instance.master);
 
+    if let Some(thread) = instance.writer_thread.take() {
+        let _ = thread.join();
+    }
     if let Some(thread) = instance.reader_thread.take() {
         let _ = thread.join();
     }
@@ -136,8 +158,11 @@ pub fn kill_all(state: &PtyState) {
     let mut instances = state.instances.lock().unwrap();
     for (_, mut instance) in instances.drain() {
         let _ = instance.child.kill();
-        drop(instance.writer);
+        drop(instance.write_tx);
         drop(instance.master);
+        if let Some(thread) = instance.writer_thread.take() {
+            let _ = thread.join();
+        }
         if let Some(thread) = instance.reader_thread.take() {
             let _ = thread.join();
         }
