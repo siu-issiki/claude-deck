@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { toast } from "sonner";
+import { useSessionStore } from "./sessionStore";
 import type { TerminalTab, PersistedTab } from "@/types/terminal";
+import type { NexusSession } from "@/types/project";
 
-const GENERATING_TIMEOUT_MS = 3000;
+const GENERATING_TIMEOUT_MS = 100;
 const generatingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 interface TerminalState {
@@ -11,13 +13,12 @@ interface TerminalState {
   activeTabId: string | null;
   generatingTabIds: Set<string>;
 
-  openSession: (
+  openSession: (session: NexusSession) => Promise<void>;
+  openNewSession: (
     projectId: string,
-    sessionId: string,
-    cwd: string | undefined,
-    title: string
+    cwd: string,
+    title?: string
   ) => Promise<void>;
-  openNewSession: (cwd: string, title?: string) => Promise<void>;
   restoreTab: (persisted: PersistedTab) => Promise<void>;
   closeTab: (id: string) => Promise<void>;
   setActiveTab: (id: string) => void;
@@ -30,9 +31,9 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
   activeTabId: null,
   generatingTabIds: new Set<string>(),
 
-  openSession: async (projectId, sessionId, cwd, title) => {
+  openSession: async (session) => {
     const { tabs } = get();
-    const existing = tabs.find((t) => t.sessionId === sessionId);
+    const existing = tabs.find((t) => t.sessionId === session.id);
     if (existing) {
       set({ activeTabId: existing.id });
       return;
@@ -40,42 +41,43 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
 
     try {
       const ptyId = await invoke<string>("spawn_pty", {
-        cwd: cwd ?? null,
-        sessionId,
+        cwd: session.cwd,
         cols: 80,
         rows: 24,
       });
       const tab: TerminalTab = {
         id: ptyId,
-        projectId,
-        sessionId,
-        title,
-        cwd: cwd ?? null,
+        sessionId: session.id,
+        title: session.title,
+        cwd: session.cwd,
       };
       set((state) => ({
         tabs: [...state.tabs, tab],
         activeTabId: ptyId,
       }));
+      await useSessionStore.getState().updateSession(session.id, {});
     } catch (e) {
       console.error("Failed to spawn PTY:", e);
       toast.error("ターミナルの起動に失敗しました");
     }
   },
 
-  openNewSession: async (cwd, title) => {
-    const label = title ?? cwd.split("/").filter(Boolean).pop() ?? "New Session";
+  openNewSession: async (projectId, cwd, title) => {
     try {
       const ptyId = await invoke<string>("spawn_pty", {
         cwd,
-        sessionId: null,
         cols: 80,
         rows: 24,
       });
+
+      const session = await useSessionStore
+        .getState()
+        .createSession(projectId, cwd, title);
+
       const tab: TerminalTab = {
         id: ptyId,
-        projectId: null,
-        sessionId: null,
-        title: label,
+        sessionId: session.id,
+        title: session.title,
         cwd,
       };
       set((state) => ({
@@ -89,27 +91,29 @@ export const useTerminalStore = create<TerminalState>()((set, get) => ({
   },
 
   restoreTab: async (persisted) => {
+    if (!persisted.sessionId) return;
+
     const { tabs } = get();
-    if (
-      persisted.sessionId &&
-      tabs.some((t) => t.sessionId === persisted.sessionId)
-    ) {
+    if (tabs.some((t) => t.sessionId === persisted.sessionId)) {
       return;
     }
 
+    const session = useSessionStore
+      .getState()
+      .sessions.find((s) => s.id === persisted.sessionId);
+    if (!session) return;
+
     try {
       const ptyId = await invoke<string>("spawn_pty", {
-        cwd: persisted.cwd,
-        sessionId: persisted.sessionId,
+        cwd: session.cwd,
         cols: 80,
         rows: 24,
       });
       const tab: TerminalTab = {
         id: ptyId,
-        projectId: persisted.projectId,
         sessionId: persisted.sessionId,
         title: persisted.title,
-        cwd: persisted.cwd,
+        cwd: session.cwd,
       };
       set((state) => ({
         tabs: [...state.tabs, tab],

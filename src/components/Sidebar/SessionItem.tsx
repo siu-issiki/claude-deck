@@ -1,19 +1,17 @@
 import { Loader2, MessageSquare, X } from "lucide-react";
-import { useProjectStore } from "@/stores/projectStore";
 import {
   useTerminalStore,
   useIsSessionGenerating,
   useSessionTabId,
 } from "@/stores/terminalStore";
 import { cn } from "@/lib/utils";
-import type { SessionInfo } from "@/types/project";
+import type { NexusSession } from "@/types/project";
 
 interface SessionItemProps {
-  session: SessionInfo;
+  session: NexusSession;
 }
 
-function formatRelativeTime(unixMs: number | null): string {
-  if (unixMs === null) return "";
+function formatRelativeTime(unixMs: number): string {
   const now = Date.now();
   const diffMs = now - unixMs;
   const diffMins = Math.floor(diffMs / 60000);
@@ -28,22 +26,15 @@ function formatRelativeTime(unixMs: number | null): string {
 }
 
 export function SessionItem({ session }: SessionItemProps) {
-  const { selectedSessionId, selectSession } = useProjectStore();
   const openSession = useTerminalStore((s) => s.openSession);
   const closeTab = useTerminalStore((s) => s.closeTab);
+  const activeTabId = useTerminalStore((s) => s.activeTabId);
   const isGenerating = useIsSessionGenerating(session.id);
   const tabId = useSessionTabId(session.id);
-  const isSelected = selectedSessionId === session.id;
-  const preview = session.firstMessage || "No message";
+  const isSelected = tabId !== null && tabId === activeTabId;
 
   const handleClick = () => {
-    selectSession(session.projectId, session.id);
-    openSession(
-      session.projectId,
-      session.id,
-      session.cwd ?? undefined,
-      session.firstMessage ?? "New session"
-    );
+    openSession(session);
   };
 
   return (
@@ -63,14 +54,9 @@ export function SessionItem({ session }: SessionItemProps) {
           ) : (
             <MessageSquare className="h-3 w-3 shrink-0 text-muted-foreground" />
           )}
-          <span className="truncate text-xs">{preview}</span>
+          <span className="truncate text-xs">{session.title}</span>
         </div>
         <div className="flex min-w-0 items-center gap-2 pl-[18px]">
-          {session.gitBranch && (
-            <span className="truncate text-[10px] text-muted-foreground">
-              {session.gitBranch}
-            </span>
-          )}
           <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
             {formatRelativeTime(session.updatedAt)}
           </span>

@@ -1,5 +1,6 @@
 import { ChevronRight, Folder, Plus } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
+import { useSessionStore } from "@/stores/sessionStore";
 import { useTerminalStore } from "@/stores/terminalStore";
 import { SessionItem } from "./SessionItem";
 import { cn } from "@/lib/utils";
@@ -10,12 +11,14 @@ interface ProjectItemProps {
 }
 
 export function ProjectItem({ project }: ProjectItemProps) {
-  const { expandedProjectIds, sessionsByProject, toggleProject } =
-    useProjectStore();
+  const { expandedProjectIds, toggleProject } = useProjectStore();
   const openNewSession = useTerminalStore((s) => s.openNewSession);
+  const allSessions = useSessionStore((s) => s.sessions);
+  const sessions = allSessions.filter(
+    (sess) => sess.projectId === project.id
+  );
 
   const isExpanded = expandedProjectIds.has(project.id);
-  const sessions = sessionsByProject[project.id];
 
   return (
     <div className="overflow-hidden">
@@ -37,13 +40,13 @@ export function ProjectItem({ project }: ProjectItemProps) {
           <Folder className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span className="truncate font-medium">{project.displayName}</span>
           <span className="ml-auto shrink-0 text-[10px] text-muted-foreground">
-            {project.sessionCount}
+            {sessions.length}
           </span>
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
-            openNewSession(project.path);
+            openNewSession(project.id, project.path);
           }}
           className="mr-2 rounded-sm p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-sidebar-accent hover:text-sidebar-accent-foreground group-hover:opacity-100"
         >
@@ -53,11 +56,7 @@ export function ProjectItem({ project }: ProjectItemProps) {
 
       {isExpanded && (
         <div className="ml-3">
-          {!sessions ? (
-            <p className="px-3 py-1 text-[10px] text-muted-foreground">
-              Loading...
-            </p>
-          ) : sessions.length === 0 ? (
+          {sessions.length === 0 ? (
             <p className="px-3 py-1 text-[10px] text-muted-foreground">
               No sessions
             </p>

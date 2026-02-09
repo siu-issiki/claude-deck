@@ -31,7 +31,6 @@ impl PtyState {
 pub fn spawn(
     state: &PtyState,
     app_handle: tauri::AppHandle,
-    session_id: Option<&str>,
     cwd: Option<&str>,
     cols: u16,
     rows: u16,
@@ -50,11 +49,9 @@ pub fn spawn(
         .openpty(size)
         .map_err(|e| format!("Failed to open PTY: {e}"))?;
 
-    let mut cmd = CommandBuilder::new("claude");
-    if let Some(sid) = session_id {
-        cmd.arg("--resume");
-        cmd.arg(sid);
-    }
+    let shell = std::env::var("SHELL").unwrap_or_else(|_| "/bin/zsh".to_string());
+    let mut cmd = CommandBuilder::new(&shell);
+    cmd.arg("-l");
     cmd.env("TERM", "xterm-256color");
 
     match cwd {

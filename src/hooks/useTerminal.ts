@@ -99,7 +99,10 @@ export function useTerminal(tabId: string, isVisible: boolean) {
         bytes[i] = decoded.charCodeAt(i);
       }
       terminal.write(bytes);
-      useTerminalStore.getState().markTabGenerating(tabId);
+      const store = useTerminalStore.getState();
+      if (store.activeTabId === tabId) {
+        store.markTabGenerating(tabId);
+      }
     });
 
     const unlistenExit = listen(`pty:${tabId}:exit`, () => {

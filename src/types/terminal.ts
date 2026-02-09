@@ -1,9 +1,8 @@
 export interface TerminalTab {
   id: string;
-  projectId: string | null;
-  sessionId: string | null;
+  sessionId: string;
   title: string;
-  cwd: string | null;
+  cwd: string;
 }
 
-export type PersistedTab = Pick<TerminalTab, "projectId" | "sessionId" | "title" | "cwd">;
+export type PersistedTab = Pick<TerminalTab, "sessionId" | "title" | "cwd">;

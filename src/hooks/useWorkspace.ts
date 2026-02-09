@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useTerminalStore } from "@/stores/terminalStore";
+import { useSessionStore } from "@/stores/sessionStore";
 import { useWorkspaceStore, settingsStore } from "@/stores/workspaceStore";
 
 export function useWorkspace() {
@@ -16,6 +17,8 @@ export function useWorkspace() {
       setIsRestoring(true);
 
       try {
+        await useSessionStore.getState().loadSessions();
+
         const workspace = await useWorkspaceStore.getState().loadWorkspace();
         const { restoreTab, setActiveTab, closeTab } =
           useTerminalStore.getState();
@@ -28,6 +31,9 @@ export function useWorkspace() {
             }
             return;
           }
+
+          if (!persisted.sessionId) continue;
+
           await restoreTab(persisted);
           const currentTabs = useTerminalStore.getState().tabs;
           if (currentTabs.length > restoredTabIds.length) {
@@ -70,14 +76,11 @@ export function useWorkspace() {
     const unsub = useTerminalStore.subscribe((state) => {
       if (useWorkspaceStore.getState().isRestoring) return;
 
-      const persistedTabs = state.tabs.map(
-        ({ projectId, sessionId, title, cwd }) => ({
-          projectId,
-          sessionId,
-          title,
-          cwd,
-        })
-      );
+      const persistedTabs = state.tabs.map(({ sessionId, title, cwd }) => ({
+        sessionId,
+        title,
+        cwd,
+      }));
       const activeIdx = state.tabs.findIndex(
         (t) => t.id === state.activeTabId
       );

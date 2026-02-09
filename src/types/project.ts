@@ -2,16 +2,15 @@ export interface ProjectInfo {
   id: string;
   path: string;
   displayName: string;
-  sessionCount: number;
-  lastActivity: number | null;
+  host: string;
+  owner: string;
 }
 
-export interface SessionInfo {
+export interface NexusSession {
   id: string;
   projectId: string;
-  createdAt: string | null;
-  updatedAt: number | null;
-  firstMessage: string | null;
-  gitBranch: string | null;
-  cwd: string | null;
+  title: string;
+  cwd: string;
+  createdAt: number;
+  updatedAt: number;
 }
