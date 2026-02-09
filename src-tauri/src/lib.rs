@@ -16,7 +16,6 @@ pub fn run() {
         .manage(PtyState::new())
         .invoke_handler(tauri::generate_handler![
             commands::projects::list_projects,
-            commands::sessions::list_sessions,
             commands::terminal::spawn_pty,
             commands::terminal::write_pty,
             commands::terminal::resize_pty,

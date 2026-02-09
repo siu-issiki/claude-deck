@@ -14,7 +14,8 @@ export function useProjects() {
         const query = searchQuery.toLowerCase();
         return (
           p.displayName.toLowerCase().includes(query) ||
-          p.path.toLowerCase().includes(query)
+          p.path.toLowerCase().includes(query) ||
+          p.owner.toLowerCase().includes(query)
         );
       })
     : projects;

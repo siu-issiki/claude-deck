@@ -39,7 +39,7 @@ export function NewSessionDialog({
 
   const handleStart = async () => {
     if (!cwd.trim()) return;
-    await openNewSession(cwd.trim());
+    await openNewSession("", cwd.trim());
     onOpenChange(false);
     setCwd("");
   };
