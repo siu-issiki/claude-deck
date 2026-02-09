@@ -4,11 +4,18 @@ import { Input } from "@/components/ui/input";
 import { ProjectList } from "./ProjectList";
 import { useProjectStore } from "@/stores/projectStore";
 
-export function Sidebar() {
+interface SidebarProps {
+  width: number;
+}
+
+export function Sidebar({ width }: SidebarProps) {
   const { searchQuery, setSearchQuery } = useProjectStore();
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-sidebar text-sidebar-foreground">
+    <aside
+      className="flex h-full flex-shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground"
+      style={{ width }}
+    >
       <div className="flex h-12 items-center border-b border-border px-4">
         <h1 className="text-sm font-semibold">nexus</h1>
       </div>
